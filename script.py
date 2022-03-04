@@ -90,7 +90,7 @@ targets = df_y_groups.reset_index().drop(['Group'], axis=1).to_numpy()
 rdlr = ReduceLROnPlateau(patience=30, factor=0.5, min_lr=1e-6, monitor='loss', verbose=1)
 
 
-model = KerasRegressor(build_fn=create_model, epochs = 10, batch_size = 8, verbose=0)
+model = KerasRegressor(build_fn=create_model, epochs = 1000, batch_size = 8, verbose=0)
 cv = GroupKFold(n_splits=5)
 
 
