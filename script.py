@@ -100,7 +100,7 @@ grp_lst = np.unique(groups)
 
 
 
-train_sizes, train_scores, test_scores, fit_times, _ = learning_curve(model, data, targets, cv= cv.split(data, targets, groups = grp_lst), fit_params={'callbacks': [rdlr]},return_times=True, scoring = 'neg_mean_squared_error', train_sizes=np.linspace(0.1, 1.0, 5))
+train_sizes, train_scores, test_scores, fit_times, _ = learning_curve(model, data, targets, cv= cv.split(data, targets, groups = grp_lst), fit_params={'callbacks': [rdlr]},return_times=True, scoring = 'neg_root_mean_squared_error', train_sizes=np.linspace(0.1, 1.0, 10))
 
 
 print('Train Sizes:', train_sizes)
