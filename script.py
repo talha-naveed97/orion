@@ -100,7 +100,7 @@ grp_lst = np.unique(groups)
 
 
 
-train_sizes, train_scores, test_scores, fit_times, _ = learning_curve(model, data, targets, cv= cv.split(data, targets, groups = grp_lst), fit_params={'callbacks': [rdlr]},return_times=True, scoring = 'neg_root_mean_squared_error', train_sizes=np.linspace(0.1, 1.0, 10))
+train_sizes, train_scores, test_scores, fit_times, _ = learning_curve(model, data, targets, cv= 5, fit_params={'callbacks': [rdlr]},return_times=True, scoring = 'neg_root_mean_squared_error', train_sizes=np.linspace(0.1, 1.0, 10))
 
 
 print('Train Sizes:', train_sizes)
@@ -148,6 +148,7 @@ test_std = np.std(test_scores, axis=1)
 #
 # Plot the learning curve
 #
+plt.figure()
 plt.plot(train_sizes, train_mean, color='blue', marker='o', markersize=5, label='Training Accuracy')
 plt.fill_between(train_sizes, train_mean + train_std, train_mean - train_std, alpha=0.15, color='blue')
 plt.plot(train_sizes, test_mean, color='green', marker='+', markersize=5, linestyle='--', label='Validation Accuracy')
