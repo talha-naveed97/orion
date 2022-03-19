@@ -66,7 +66,7 @@ def create_model():
     x = Flatten()(x)
     x = Dropout(0.5)(x)
     x = Dense(128, activation='elu')(x)
-    x = Dropout(0.4)(x)
+    x = Dropout(0.2)(x)
     output_layer = Dense(1)(x)
     model = Model(input_layer, output_layer)
     model.compile(loss='mse', optimizer='adam')
@@ -86,21 +86,12 @@ data = df_X_groups.reset_index().drop(['Group'], axis=1).to_numpy()
 targets = df_y_groups.reset_index().drop(['Group'], axis=1).to_numpy()
 
 
-
-rdlr = ReduceLROnPlateau(patience=30, factor=0.5, min_lr=1e-6, monitor='loss', verbose=1)
-
-
-model = KerasRegressor(build_fn=create_model, epochs = 1000, batch_size = 8, verbose=0)
-cv = GroupKFold(n_splits=5)
-
-
-
-grp_lst = np.unique(groups)
+model = KerasRegressor(build_fn=create_model, epochs = 1000, batch_size = 16, verbose=0)
 
 
 
 
-train_sizes, train_scores, test_scores, fit_times, _ = learning_curve(model, data, targets, cv= 5, fit_params={'callbacks': [rdlr]},return_times=True, scoring = 'neg_root_mean_squared_error', train_sizes=np.linspace(0.1, 1.0, 10))
+train_sizes, train_scores, test_scores, fit_times, _ = learning_curve(model, data, targets, cv= 5 ,return_times=True, scoring = 'neg_root_mean_squared_error', train_sizes=np.linspace(0.1, 1.0, 10))
 
 
 print('Train Sizes:', train_sizes)
@@ -141,10 +132,10 @@ plt.savefig('fig3.pdf')
 #
 # Calculate training and test mean and std
 #
-train_mean = np.mean(train_scores, axis=1)
-train_std = np.std(train_scores, axis=1)
-test_mean = np.mean(test_scores, axis=1)
-test_std = np.std(test_scores, axis=1)
+train_mean = -1 * np.mean(train_scores, axis=1)
+train_std = -1 * np.std(train_scores, axis=1)
+test_mean = -1 * np.mean(test_scores, axis=1)
+test_std = -1 * np.std(test_scores, axis=1)
 #
 # Plot the learning curve
 #
@@ -174,3 +165,7 @@ validation_scores_mean = -test_scores.mean(axis = 1)
 print('Mean training scores\n\n', pd.Series(train_scores_mean, index = train_sizes))
 print('\n', '-' * 20) # separator
 print('\nMean validation scores\n\n',pd.Series(validation_scores_mean, index = train_sizes))
+
+
+
+
