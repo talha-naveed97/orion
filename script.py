@@ -28,10 +28,10 @@ import os
 print('The scikit-learn version is {}.'.format(sklearn.__version__))
 
 
-np.random.seed(103)
-random.seed(103)
-os.environ['PYTHONHASHSEED'] = '3'
-tf.random.set_seed(103)
+np.random.seed(42)
+random.seed(42)
+os.environ['PYTHONHASHSEED'] = '42'
+tf.random.set_seed(42)
 
 session_conf = tf.compat.v1.ConfigProto( intra_op_parallelism_threads=1, inter_op_parallelism_threads=1 )
 sess = tf.compat.v1.Session( graph=tf.compat.v1.get_default_graph(), config=session_conf )
