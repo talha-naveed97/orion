@@ -132,10 +132,10 @@ plt.savefig('fig3.pdf')
 #
 # Calculate training and test mean and std
 #
-train_mean = -1 * np.mean(train_scores, axis=1)
-train_std = -1 * np.std(train_scores, axis=1)
-test_mean = -1 * np.mean(test_scores, axis=1)
-test_std = -1 * np.std(test_scores, axis=1)
+train_mean = np.mean(train_scores, axis=1)
+train_std = np.std(train_scores, axis=1)
+test_mean = np.mean(test_scores, axis=1)
+test_std = np.std(test_scores, axis=1)
 #
 # Plot the learning curve
 #
@@ -151,6 +151,29 @@ plt.grid()
 plt.legend(loc='lower right')
 plt.show()
 plt.savefig('fig4.pdf')
+
+
+
+train_mean = -1 * np.mean(train_scores, axis=1)
+train_std = -1 * np.std(train_scores, axis=1)
+test_mean = -1 * np.mean(test_scores, axis=1)
+test_std = -1 * np.std(test_scores, axis=1)
+
+#
+# Plot the learning curve
+#
+plt.figure()
+plt.plot(train_sizes, train_mean, color='blue', marker='o', markersize=5, label='Training Accuracy')
+plt.fill_between(train_sizes, train_mean + train_std, train_mean - train_std, alpha=0.15, color='blue')
+plt.plot(train_sizes, test_mean, color='green', marker='+', markersize=5, linestyle='--', label='Validation Accuracy')
+plt.fill_between(train_sizes, test_mean + test_std, test_mean - test_std, alpha=0.15, color='green')
+plt.title('Learning Curve')
+plt.xlabel('Training Data Size')
+plt.ylabel('Model accuracy')
+plt.grid()
+plt.legend(loc='lower right')
+plt.show()
+plt.savefig('fig5.pdf')
 
 
 print('Training scores:\n\n', train_scores)
