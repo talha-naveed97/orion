@@ -28,10 +28,13 @@ import os
 print('The scikit-learn version is {}.'.format(sklearn.__version__))
 
 
-np.random.seed(42)
-random.seed(42)
-os.environ['PYTHONHASHSEED'] = '42'
-tf.random.set_seed(42)
+seed = 42
+seed_str = '42'
+
+np.random.seed(seed)
+random.seed(seed)
+os.environ['PYTHONHASHSEED'] = seed_str
+tf.random.set_seed(seed)
 
 session_conf = tf.compat.v1.ConfigProto( intra_op_parallelism_threads=1, inter_op_parallelism_threads=1 )
 sess = tf.compat.v1.Session( graph=tf.compat.v1.get_default_graph(), config=session_conf )
@@ -91,7 +94,7 @@ model = KerasRegressor(build_fn=create_model, epochs = 1000, batch_size = 16, ve
 
 
 
-train_sizes, train_scores, test_scores, fit_times, _ = learning_curve(model, data, targets, cv= 5 ,return_times=True, scoring = 'neg_root_mean_squared_error', train_sizes=np.linspace(0.1, 1.0, 10))
+train_sizes, train_scores, test_scores, fit_times, _ = learning_curve(model, data, targets, cv= 5 ,return_times=True, scoring = 'neg_root_mean_squared_error', train_sizes=np.linspace(0.1, 1.0, 20))
 
 
 print('Train Sizes:', train_sizes)
@@ -105,19 +108,21 @@ print('Train Scores:', train_scores)
 print('Train Scores:', test_scores)
 
 
+fig_name = "fig_" + str(seed) + str(1) + ".pdf"
 
 plt.figure()
 plt.plot(train_sizes,np.mean(train_scores,axis=1))
 plt.show()
-plt.savefig('fig1.pdf')
+plt.savefig(fig_name)
 
-
+fig_name = "fig_" + str(seed) + str(2) + ".pdf"
 
 plt.figure()
 plt.plot(train_sizes,np.mean(test_scores,axis=1))
 plt.show()
-plt.savefig('fig2.pdf')
+plt.savefig(fig_name)
 
+fig_name = "fig_" + str(seed) + str(3) + ".pdf"
 
 plt.figure()
 plt.plot(train_sizes,np.mean(train_scores,axis=1), label = 'Train')
@@ -127,7 +132,7 @@ plt.show()
 plt.savefig('fig3.pdf')
 
 
-
+fig_name = "fig_" + str(seed) + str(4) + ".pdf"
 
 #
 # Calculate training and test mean and std
@@ -153,6 +158,8 @@ plt.show()
 plt.savefig('fig4.pdf')
 
 
+
+fig_name = "fig_" + str(seed) + str(5) + ".pdf"
 
 train_mean = -1 * np.mean(train_scores, axis=1)
 train_std = -1 * np.std(train_scores, axis=1)
