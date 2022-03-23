@@ -28,8 +28,8 @@ import os
 print('The scikit-learn version is {}.'.format(sklearn.__version__))
 
 
-seed = 3
-seed_str = '3'
+seed = 42
+seed_str = '42'
 
 np.random.seed(seed)
 random.seed(seed)
