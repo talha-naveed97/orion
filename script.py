@@ -178,7 +178,7 @@ plt.title('Learning Curve')
 plt.xlabel('Training Data Size')
 plt.ylabel('Model accuracy')
 plt.grid()
-plt.legend(loc='lower right')
+plt.legend(loc='upper right')
 plt.show()
 plt.savefig(fig_name)
 
