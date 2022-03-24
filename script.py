@@ -129,7 +129,7 @@ plt.plot(train_sizes,np.mean(train_scores,axis=1), label = 'Train')
 plt.plot(train_sizes,np.mean(test_scores,axis=1), label = 'Test')
 plt.legend()
 plt.show()
-plt.savefig('fig3.pdf')
+plt.savefig(fig_name)
 
 
 fig_name = "fig_" + str(seed) + str(4) + ".pdf"
@@ -155,7 +155,7 @@ plt.ylabel('Model accuracy')
 plt.grid()
 plt.legend(loc='lower right')
 plt.show()
-plt.savefig('fig4.pdf')
+plt.savefig(fig_name)
 
 
 
@@ -180,7 +180,7 @@ plt.ylabel('Model accuracy')
 plt.grid()
 plt.legend(loc='lower right')
 plt.show()
-plt.savefig('fig5.pdf')
+plt.savefig(fig_name)
 
 
 print('Training scores:\n\n', train_scores)
