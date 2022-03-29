@@ -28,8 +28,8 @@ import os
 print('The scikit-learn version is {}.'.format(sklearn.__version__))
 
 
-seed = 42
-seed_str = '42'
+seed = 3
+seed_str = '3'
 
 np.random.seed(seed)
 random.seed(seed)
@@ -85,9 +85,38 @@ df_y['Group'] = groups
 df_X_groups = df_X.groupby(['Group']).mean()
 df_y_groups = df_y.groupby(['Group']).mean()
 
-data = df_X_groups.reset_index().drop(['Group'], axis=1).to_numpy()
-targets = df_y_groups.reset_index().drop(['Group'], axis=1).to_numpy()
+data_mean = df_X_groups.reset_index().drop(['Group'], axis=1).to_numpy()
+targets_mean = df_y_groups.reset_index().drop(['Group'], axis=1).to_numpy()
 
+
+
+def AugmentDataByLinearCombinations(data, target, sample_count = 50, randomseed = 3):
+    max_coeffcients = 2
+    #total_groups = len(pd.unique(data['Group']))
+    total_groups = len(data)
+    x = data
+    y = target
+#     print(x.shape)
+#     print(y.shape)
+    data_augmented = np.full((sample_count, x.shape[1]), np.nan)
+    target_augmented = np.full((sample_count), np.nan)
+#     pr = True
+    for i in range(sample_count):
+        coeffcient_vector = np.random.rand(1,max_coeffcients)[0]
+        coeffcient_vector = coeffcient_vector/np.sum(coeffcient_vector)
+        coeffcient_vector = np.pad(coeffcient_vector, (0, total_groups - max_coeffcients), 'constant')
+#         if pr:
+#             print(np.sum(coeffcient_vector))
+#             print(coeffcient_vector.shape)
+#             pr = False
+        np.random.shuffle(coeffcient_vector)
+        data_augmented[i] = np.dot(coeffcient_vector[np.newaxis,:],x)
+        target_augmented[i] = np.dot(coeffcient_vector[np.newaxis,:],y)
+    return data_augmented,target_augmented
+
+
+
+data, targets = AugmentDataByLinearCombinations(data_mean, targets_mean, 1500)
 
 model = KerasRegressor(build_fn=create_model, epochs = 1000, batch_size = 16, verbose=0)
 
