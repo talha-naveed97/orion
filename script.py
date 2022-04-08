@@ -123,7 +123,7 @@ model = KerasRegressor(build_fn=create_model, epochs = 1000, batch_size = 16, ve
 
 
 
-train_sizes, train_scores, test_scores, fit_times, _ = learning_curve(model, data, targets, cv= 5 ,return_times=True, scoring = 'neg_root_mean_squared_error', train_sizes=np.linspace(0.1, 1.0, 20))
+train_sizes, train_scores, test_scores, fit_times, _ = learning_curve(model, data, targets, cv= 5 ,return_times=True, scoring = 'neg_root_mean_squared_error', train_sizes=np.linspace(0.1, 1.0, 10))
 
 
 print('Train Sizes:', train_sizes)

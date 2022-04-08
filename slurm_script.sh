@@ -2,7 +2,7 @@
 #SBATCH --ntasks=8                      # 1 core(CPU)
 #SBATCH --nodes=1                       # Use 1 node
 #SBATCH --job-name=talha_learning_curves           # The name for our job
-#SBATCH --mem=3G                        # Default memory per CPU is 3GB.
+#SBATCH --mem=10G                        # Default memory per CPU is 3GB.
 #SBATCH --partition=smallmem            # We want to use a node with a GPU
 #SBATCH --mail-user=talha.naveed@nmbu.no    # Email me when job is done.
 #SBATCH --mail-type=ALL                 # Please e-mail me about all messages regarding this job
