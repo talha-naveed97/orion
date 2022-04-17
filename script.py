@@ -33,11 +33,11 @@ from tensorflow.keras.wrappers.scikit_learn import KerasRegressor
 import os
 from sklearn.pipeline import Pipeline
 
-seed = 3
+seed = 42
 
 np.random.seed(seed)
 random.seed(seed)
-os.environ['PYTHONHASHSEED'] = '3'
+os.environ['PYTHONHASHSEED'] = '42'
 tf.random.set_seed(seed)
 
 session_conf = tf.compat.v1.ConfigProto( intra_op_parallelism_threads=1, inter_op_parallelism_threads=1 )
@@ -92,7 +92,7 @@ targets.shape
 rdlr = ReduceLROnPlateau(patience=30, factor=0.5, min_lr=1e-6, monitor='loss', verbose=1)
 es = EarlyStopping(monitor='loss', patience=60)
 
-model = KerasRegressor(build_fn=create_model, epochs = 500, batch_size = 8, verbose=0)
+model = KerasRegressor(build_fn=create_model, epochs = 1000, batch_size = 8, verbose=0)
 
 
 pipe = Pipeline([
