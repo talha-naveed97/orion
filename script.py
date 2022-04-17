@@ -1,130 +1,107 @@
-# coding: utf-8
+# -*- coding: utf-8 -*-
+"""
+Created on Sun Apr 17 00:13:19 2022
 
-
+@author: cn5076
+"""
 
 import matplotlib.pyplot as plt
+from matplotlib.widgets import Slider
 import scipy.io as scio
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import GroupShuffleSplit
 import numpy as np
-from tensorflow.keras.layers import Dense, Flatten
+from scipy.signal import savgol_filter
+from tensorflow.keras.layers import Dense, Flatten, Conv2D
+from tensorflow.keras.losses import binary_crossentropy
 from tensorflow.keras.optimizers import Adam, RMSprop, SGD
 from tensorflow.keras.layers import Input, Conv1D, BatchNormalization, Activation, MaxPooling1D, Dropout, Conv2DTranspose, concatenate
 from tensorflow.keras.models import Model,Sequential
-from tensorflow.keras.callbacks import ReduceLROnPlateau
+from tensorflow.keras.wrappers.scikit_learn import KerasClassifier
+from tensorflow.keras.callbacks import ReduceLROnPlateau,EarlyStopping
 import random 
 import pandas as pd
+from sklearn.model_selection import GridSearchCV,RandomizedSearchCV
 from sklearn.metrics import r2_score
+from sklearn.model_selection import StratifiedKFold
 import tensorflow as tf
-import sklearn
+from scipy.special import eval_legendre
+from sklearn.decomposition import PCA
 from sklearn.model_selection import learning_curve
 from sklearn.model_selection import GroupKFold
 from tensorflow.keras.wrappers.scikit_learn import KerasRegressor
 import os
-
-
-
-
-print('The scikit-learn version is {}.'.format(sklearn.__version__))
-
+from sklearn.pipeline import Pipeline
 
 seed = 3
-seed_str = '3'
 
 np.random.seed(seed)
 random.seed(seed)
-os.environ['PYTHONHASHSEED'] = seed_str
+os.environ['PYTHONHASHSEED'] = '3'
 tf.random.set_seed(seed)
 
 session_conf = tf.compat.v1.ConfigProto( intra_op_parallelism_threads=1, inter_op_parallelism_threads=1 )
 sess = tf.compat.v1.Session( graph=tf.compat.v1.get_default_graph(), config=session_conf )
 tf.compat.v1.keras.backend.set_session(sess)
 
-
-
 data = scio.loadmat('Ramanmilk_prepped.mat')
-print(data.keys())
-
-
+data.keys()
 
 X= data['X']
 cla = data['CLA'].flatten()
 iodine = data['Iodine'].flatten()
 groups = data['cvseg'].flatten()
 
+plt.plot(X[:500].T)
+plt.show()
+np.unique(iodine).shape
 
+np.unique(groups).shape
+
+X.shape
+plt.plot(X.T)
+plt.show()
 
 
 def create_model():
     input_layer = Input((X.shape[1], 1))
-    x = Conv1D(32, 30, activation='elu')(input_layer)
-    x = MaxPooling1D(pool_size=2)(x)
-    x = BatchNormalization()(x)
-    x = Conv1D(16, 30, activation='elu')(x)
-    x = MaxPooling1D(pool_size=2)(x)
-    x = BatchNormalization()(x)
-    x = Conv1D(8, 30, activation='elu')(x)
-    x = MaxPooling1D(pool_size=2)(x)
-    x = BatchNormalization()(x)
+    x = Conv1D(32, 30, activation='relu')(input_layer)
     x = Flatten()(x)
-    x = Dropout(0.5)(x)
-    x = Dense(128, activation='elu')(x)
-    x = Dropout(0.2)(x)
+    x = Dropout(0.3)(x)
+    x = Dense(64, activation='relu')(x)
     output_layer = Dense(1)(x)
     model = Model(input_layer, output_layer)
     model.compile(loss='mse', optimizer='adam')
     return model
 
 
-# Mean by groups
-
 df_X = pd.DataFrame(X)
-df_y = pd.DataFrame(iodine)
 df_X['Group'] = groups
-df_y['Group'] = groups
 df_X_groups = df_X.groupby(['Group']).mean()
+data = df_X_groups.reset_index().drop(['Group'], axis=1).to_numpy()
+
+df_y = pd.DataFrame(iodine)
+df_y['Group'] = groups
 df_y_groups = df_y.groupby(['Group']).mean()
+targets = df_y_groups.reset_index().drop(['Group'], axis=1).to_numpy()
 
-data_mean = df_X_groups.reset_index().drop(['Group'], axis=1).to_numpy()
-targets_mean = df_y_groups.reset_index().drop(['Group'], axis=1).to_numpy()
+data.shape
 
+targets.shape
 
+rdlr = ReduceLROnPlateau(patience=30, factor=0.5, min_lr=1e-6, monitor='loss', verbose=1)
+es = EarlyStopping(monitor='loss', patience=60)
 
-def AugmentDataByLinearCombinations(data, target, sample_count = 50, randomseed = 3):
-    max_coeffcients = 2
-    #total_groups = len(pd.unique(data['Group']))
-    total_groups = len(data)
-    x = data
-    y = target
-#     print(x.shape)
-#     print(y.shape)
-    data_augmented = np.full((sample_count, x.shape[1]), np.nan)
-    target_augmented = np.full((sample_count), np.nan)
-#     pr = True
-    for i in range(sample_count):
-        coeffcient_vector = np.random.rand(1,max_coeffcients)[0]
-        coeffcient_vector = coeffcient_vector/np.sum(coeffcient_vector)
-        coeffcient_vector = np.pad(coeffcient_vector, (0, total_groups - max_coeffcients), 'constant')
-#         if pr:
-#             print(np.sum(coeffcient_vector))
-#             print(coeffcient_vector.shape)
-#             pr = False
-        np.random.shuffle(coeffcient_vector)
-        data_augmented[i] = np.dot(coeffcient_vector[np.newaxis,:],x)
-        target_augmented[i] = np.dot(coeffcient_vector[np.newaxis,:],y)
-    return data_augmented,target_augmented
+model = KerasRegressor(build_fn=create_model, epochs = 500, batch_size = 8, verbose=0)
 
 
+pipe = Pipeline([
+            ('sc', StandardScaler()),
+            ('model', model)
+        ])
 
-data, targets = AugmentDataByLinearCombinations(data_mean, targets_mean, 1500)
-
-model = KerasRegressor(build_fn=create_model, epochs = 1000, batch_size = 16, verbose=0)
-
-
-
-
-train_sizes, train_scores, test_scores, fit_times, _ = learning_curve(model, data, targets, cv= 5 ,return_times=True, scoring = 'neg_root_mean_squared_error', train_sizes=np.linspace(0.1, 1.0, 10))
-
+train_sizes, train_scores, test_scores, fit_times, _ = learning_curve(pipe, data, targets, cv = 5 , fit_params={'model__callbacks': [rdlr,es]},return_times=True,
+                                                                      scoring = 'neg_root_mean_squared_error', train_sizes=np.linspace(0.1, 1.0, 10))
 
 print('Train Sizes:', train_sizes)
 
@@ -136,32 +113,7 @@ print('Train Scores:', train_scores)
 
 print('Train Scores:', test_scores)
 
-
 fig_name = "fig_" + str(seed) + str(1) + ".pdf"
-
-plt.figure()
-plt.plot(train_sizes,np.mean(train_scores,axis=1))
-plt.show()
-plt.savefig(fig_name)
-
-fig_name = "fig_" + str(seed) + str(2) + ".pdf"
-
-plt.figure()
-plt.plot(train_sizes,np.mean(test_scores,axis=1))
-plt.show()
-plt.savefig(fig_name)
-
-fig_name = "fig_" + str(seed) + str(3) + ".pdf"
-
-plt.figure()
-plt.plot(train_sizes,np.mean(train_scores,axis=1), label = 'Train')
-plt.plot(train_sizes,np.mean(test_scores,axis=1), label = 'Test')
-plt.legend()
-plt.show()
-plt.savefig(fig_name)
-
-
-fig_name = "fig_" + str(seed) + str(4) + ".pdf"
 
 #
 # Calculate training and test mean and std
@@ -186,9 +138,7 @@ plt.legend(loc='lower right')
 plt.show()
 plt.savefig(fig_name)
 
-
-
-fig_name = "fig_" + str(seed) + str(5) + ".pdf"
+fig_name = "fig_" + str(seed) + str(2) + ".pdf"
 
 train_mean = -1 * np.mean(train_scores, axis=1)
 train_std = -1 * np.std(train_scores, axis=1)
@@ -211,11 +161,9 @@ plt.legend(loc='upper right')
 plt.show()
 plt.savefig(fig_name)
 
-
 print('Training scores:\n\n', train_scores)
 print('\n', '-' * 70) # separator to make the output easy to read
 print('\nValidation scores:\n\n', test_scores)
-
 
 
 
@@ -224,7 +172,5 @@ validation_scores_mean = -test_scores.mean(axis = 1)
 print('Mean training scores\n\n', pd.Series(train_scores_mean, index = train_sizes))
 print('\n', '-' * 20) # separator
 print('\nMean validation scores\n\n',pd.Series(validation_scores_mean, index = train_sizes))
-
-
 
 
