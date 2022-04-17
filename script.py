@@ -33,11 +33,11 @@ from tensorflow.keras.wrappers.scikit_learn import KerasRegressor
 import os
 from sklearn.pipeline import Pipeline
 
-seed = 42
+seed = 3
 
 np.random.seed(seed)
 random.seed(seed)
-os.environ['PYTHONHASHSEED'] = '42'
+os.environ['PYTHONHASHSEED'] = '3'
 tf.random.set_seed(seed)
 
 session_conf = tf.compat.v1.ConfigProto( intra_op_parallelism_threads=1, inter_op_parallelism_threads=1 )
