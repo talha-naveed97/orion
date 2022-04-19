@@ -33,11 +33,11 @@ from tensorflow.keras.wrappers.scikit_learn import KerasRegressor
 import os
 from sklearn.pipeline import Pipeline
 
-seed = 3
+seed = 100
 
 np.random.seed(seed)
 random.seed(seed)
-os.environ['PYTHONHASHSEED'] = '3'
+os.environ['PYTHONHASHSEED'] = '100'
 tf.random.set_seed(seed)
 
 session_conf = tf.compat.v1.ConfigProto( intra_op_parallelism_threads=1, inter_op_parallelism_threads=1 )
@@ -51,9 +51,6 @@ X= data['X']
 cla = data['CLA'].flatten()
 iodine = data['Iodine'].flatten()
 groups = data['cvseg'].flatten()
-
-
-
 
 def create_model():
     input_layer = Input((X.shape[1], 1))
@@ -84,7 +81,7 @@ targets.shape
 rdlr = ReduceLROnPlateau(patience=30, factor=0.5, min_lr=1e-6, monitor='loss', verbose=1)
 es = EarlyStopping(monitor='loss', patience=60)
 
-model = KerasRegressor(build_fn=create_model, epochs = 500, batch_size = 8, verbose=0)
+model = KerasRegressor(build_fn=create_model, epochs = 1000, batch_size = 8, verbose=0)
 
 
 pipe = Pipeline([
@@ -92,7 +89,7 @@ pipe = Pipeline([
             ('model', model)
         ])
 
-train_sizes, train_scores, test_scores, fit_times, _ = learning_curve(pipe, data, targets, cv = 5 , return_times=True,
+train_sizes, train_scores, test_scores, fit_times, _ = learning_curve(pipe, data, targets, cv = 5 , fit_params={'model__callbacks': [rdlr,es]},return_times=True,
                                                                       scoring = 'neg_root_mean_squared_error', train_sizes=np.linspace(0.1, 1.0, 10))
 
 print('Train Sizes:', train_sizes)

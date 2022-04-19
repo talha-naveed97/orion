@@ -33,11 +33,11 @@ from tensorflow.keras.wrappers.scikit_learn import KerasRegressor
 import os
 from sklearn.pipeline import Pipeline
 
-seed = 3
+seed = 42
 
 np.random.seed(seed)
 random.seed(seed)
-os.environ['PYTHONHASHSEED'] = '3'
+os.environ['PYTHONHASHSEED'] = '42'
 tf.random.set_seed(seed)
 
 session_conf = tf.compat.v1.ConfigProto( intra_op_parallelism_threads=1, inter_op_parallelism_threads=1 )
@@ -46,14 +46,6 @@ tf.compat.v1.keras.backend.set_session(sess)
 
 data = scio.loadmat('Ramanmilk_prepped.mat')
 data.keys()
-
-X= data['X']
-cla = data['CLA'].flatten()
-iodine = data['Iodine'].flatten()
-groups = data['cvseg'].flatten()
-
-
-
 
 def create_model():
     input_layer = Input((X.shape[1], 1))
