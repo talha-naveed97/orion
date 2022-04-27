@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 """
-Created on Sun Apr 17 00:13:19 2022
+Created on Wed Apr 27 15:36:24 2022
 
 @author: cn5076
 """
+
 
 import matplotlib.pyplot as plt
 from matplotlib.widgets import Slider
@@ -33,11 +34,11 @@ from tensorflow.keras.wrappers.scikit_learn import KerasRegressor
 import os
 from sklearn.pipeline import Pipeline
 
-seed = 100
+seed = 3
 
 np.random.seed(seed)
 random.seed(seed)
-os.environ['PYTHONHASHSEED'] = '100'
+os.environ['PYTHONHASHSEED'] = '3'
 tf.random.set_seed(seed)
 
 session_conf = tf.compat.v1.ConfigProto( intra_op_parallelism_threads=1, inter_op_parallelism_threads=1 )
@@ -51,6 +52,9 @@ X= data['X']
 cla = data['CLA'].flatten()
 iodine = data['Iodine'].flatten()
 groups = data['cvseg'].flatten()
+
+
+
 
 def create_model():
     input_layer = Input((X.shape[1], 1))
@@ -67,21 +71,37 @@ def create_model():
 df_X = pd.DataFrame(X)
 df_X['Group'] = groups
 df_X_groups = df_X.groupby(['Group']).mean()
-data = df_X_groups.reset_index().drop(['Group'], axis=1).to_numpy()
+data_mean = df_X_groups.reset_index().drop(['Group'], axis=1).to_numpy()
 
 df_y = pd.DataFrame(iodine)
 df_y['Group'] = groups
 df_y_groups = df_y.groupby(['Group']).mean()
-targets = df_y_groups.reset_index().drop(['Group'], axis=1).to_numpy()
+targets_mean = df_y_groups.reset_index().drop(['Group'], axis=1).to_numpy()
 
-data.shape
 
-targets.shape
+def AugmentDataByLinearCombinations(data, target, sample_count = 50):
+    max_coeffcients = 2
+    total_groups = len(data)
+    x = data
+    y = target
+    data_augmented = np.full((sample_count, x.shape[1]), np.nan)
+    target_augmented = np.full((sample_count), np.nan)
+    for i in range(sample_count):
+        coeffcient_vector = np.random.rand(1,max_coeffcients)[0]
+        coeffcient_vector = coeffcient_vector/np.sum(coeffcient_vector)
+        coeffcient_vector = np.pad(coeffcient_vector, (0, total_groups - max_coeffcients), 'constant')
+        np.random.shuffle(coeffcient_vector)
+        data_augmented[i] = np.dot(coeffcient_vector[np.newaxis,:],x)
+        target_augmented[i] = np.dot(coeffcient_vector[np.newaxis,:],y)
+    return data_augmented,target_augmented
+
+
+data, targets = AugmentDataByLinearCombinations(data_mean, targets_mean, 2000)
 
 rdlr = ReduceLROnPlateau(patience=30, factor=0.5, min_lr=1e-6, monitor='loss', verbose=1)
 es = EarlyStopping(monitor='loss', patience=60)
 
-model = KerasRegressor(build_fn=create_model, epochs = 1000, batch_size = 8, verbose=0)
+model = KerasRegressor(build_fn=create_model, epochs = 500, batch_size = 8, verbose=0)
 
 
 pipe = Pipeline([
@@ -89,7 +109,7 @@ pipe = Pipeline([
             ('model', model)
         ])
 
-train_sizes, train_scores, test_scores, fit_times, _ = learning_curve(pipe, data, targets, cv = 5 , fit_params={'model__callbacks': [rdlr,es]},return_times=True,
+train_sizes, train_scores, test_scores, fit_times, _ = learning_curve(pipe, data, targets, cv = 5, return_times=True,
                                                                       scoring = 'neg_root_mean_squared_error', train_sizes=np.linspace(0.1, 1.0, 10))
 
 print('Train Sizes:', train_sizes)
@@ -102,7 +122,7 @@ print('Train Scores:', train_scores)
 
 print('Train Scores:', test_scores)
 
-fig_name = "fig_" + str(seed) + str(1) + ".pdf"
+fig_name = "augmented_fig_" + str(seed) + str(1) + ".pdf"
 
 #
 # Calculate training and test mean and std
@@ -127,7 +147,7 @@ plt.legend(loc='lower right')
 plt.show()
 plt.savefig(fig_name)
 
-fig_name = "fig_" + str(seed) + str(2) + ".pdf"
+fig_name = "augmented_fig_" + str(seed) + str(2) + ".pdf"
 
 train_mean = -1 * np.mean(train_scores, axis=1)
 train_std = -1 * np.std(train_scores, axis=1)

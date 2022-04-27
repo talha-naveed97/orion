@@ -77,9 +77,7 @@ df_y['Group'] = groups
 df_y_groups = df_y.groupby(['Group']).mean()
 targets = df_y_groups.reset_index().drop(['Group'], axis=1).to_numpy()
 
-data.shape
 
-targets.shape
 
 rdlr = ReduceLROnPlateau(patience=30, factor=0.5, min_lr=1e-6, monitor='loss', verbose=1)
 es = EarlyStopping(monitor='loss', patience=60)
