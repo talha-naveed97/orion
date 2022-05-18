@@ -33,6 +33,7 @@ from sklearn.model_selection import GroupKFold
 from tensorflow.keras.wrappers.scikit_learn import KerasRegressor
 import os
 from sklearn.pipeline import Pipeline
+from sklearn.cross_decomposition import PLSRegression
 
 seed = 3
 
@@ -76,24 +77,28 @@ df_y_groups = df_y.groupby(['Group']).mean()
 targets_mean = df_y_groups.reset_index().drop(['Group'], axis=1).to_numpy()
 
 
-def AugmentDataByLinearCombinations(data, target, sample_count = 50, max_rows = 2):
-    max_coeffcients = max_rows
-    total_groups = len(data)
-    x = data
-    y = target
+
+
+def Augment_normaldist(x, x_loadings, y_loadings, x_scores,sample_count = 50, number_of_components = 13):
     data_augmented = np.full((sample_count, x.shape[1]), np.nan)
     target_augmented = np.full((sample_count), np.nan)
-    for i in range(sample_count):
-        coeffcient_vector = np.random.rand(1,max_coeffcients)[0]
-        coeffcient_vector = coeffcient_vector/np.sum(coeffcient_vector)
-        coeffcient_vector = np.pad(coeffcient_vector, (0, total_groups - max_coeffcients), 'constant')
-        np.random.shuffle(coeffcient_vector)
-        data_augmented[i] = np.dot(coeffcient_vector[np.newaxis,:],x)
-        target_augmented[i] = np.dot(coeffcient_vector[np.newaxis,:],y)
+    T = np.random.normal(0, 1, (sample_count, number_of_components))
+    f = np.linalg.norm(x_scores, axis=0)
+    T = T* f * (1/np.sqrt(len(x_scores)))
+    data_augmented = np.dot(T, x_loadings.T)
+    target_augmented = np.dot(T, y_loadings.T)
     return data_augmented,target_augmented
 
 
-data, targets = AugmentDataByLinearCombinations(data_mean, targets_mean, 1000, 2)
+
+pls_aug = PLSRegression(scale = False, n_components = 20)
+
+pls_aug.fit(data_mean, targets_mean)
+
+data, targets = Augment_normaldist(data_mean,pls_aug.x_loadings_,pls_aug.y_loadings_,pls_aug.x_scores_,500,20)
+
+data = data + np.mean(data_mean, axis = 0)
+targets = targets + np.mean(targets_mean)
 
 rdlr = ReduceLROnPlateau(patience=30, factor=0.5, min_lr=1e-6, monitor='loss', verbose=0)
 es = EarlyStopping(monitor='loss', patience=60)
@@ -118,7 +123,7 @@ print('Train Scores:', train_scores)
 
 print('Train Scores:', test_scores)
 
-fig_name = "linear_augmented_fig_" + str(seed) + str(1) + ".pdf"
+fig_name = "plsr_augmented_fig_" + str(seed) + str(1) + ".pdf"
 
 #
 # Calculate training and test mean and std
@@ -143,7 +148,7 @@ plt.legend(loc='lower right')
 plt.show()
 plt.savefig(fig_name)
 
-fig_name = "linear_augmented_fig_" + str(seed) + str(2) + ".pdf"
+fig_name = "plsr_augmented_fig_" + str(seed) + str(2) + ".pdf"
 
 train_mean = -1 * np.mean(train_scores, axis=1)
 train_std = -1 * np.std(train_scores, axis=1)

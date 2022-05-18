@@ -76,24 +76,59 @@ df_y_groups = df_y.groupby(['Group']).mean()
 targets_mean = df_y_groups.reset_index().drop(['Group'], axis=1).to_numpy()
 
 
-def AugmentDataByLinearCombinations(data, target, sample_count = 50, max_rows = 2):
-    max_coeffcients = max_rows
-    total_groups = len(data)
-    x = data
-    y = target
-    data_augmented = np.full((sample_count, x.shape[1]), np.nan)
-    target_augmented = np.full((sample_count), np.nan)
-    for i in range(sample_count):
-        coeffcient_vector = np.random.rand(1,max_coeffcients)[0]
-        coeffcient_vector = coeffcient_vector/np.sum(coeffcient_vector)
-        coeffcient_vector = np.pad(coeffcient_vector, (0, total_groups - max_coeffcients), 'constant')
-        np.random.shuffle(coeffcient_vector)
-        data_augmented[i] = np.dot(coeffcient_vector[np.newaxis,:],x)
-        target_augmented[i] = np.dot(coeffcient_vector[np.newaxis,:],y)
-    return data_augmented,target_augmented
+def EMSC(data, degree = 0):
+    params_list = []
+    corr = np.zeros(data.shape)
+    mean = np.mean(data, axis=0)[:,np.newaxis]
+    x = np.linspace(-1, 1, data.shape[1])
+    P = np.zeros([data.shape[1], degree+1])
+    for j in range(0, degree+1):
+        P[:, j] = eval_legendre(j, x)
+    XC = np.concatenate((mean, P),1)
+    for i in range(len(data)):
+        y = data[i,:][:,np.newaxis]
+        params = np.linalg.lstsq(XC, y)[0]
+        b = params[0]
+        a = params[1]
+        degrees = np.delete(params, [0,1])
+        degree_vectors = np.delete(XC,[0,1],axis = 1)
+        no_baseline_variations = y - a
+        for d in range(0, degree):
+            no_baseline_variations -= (degrees[d] * degree_vectors[:,[d]])
+        corr[i,:] = (no_baseline_variations/b).ravel()
+        params_list.append(params)
+    return corr,np.array(params_list)
+    
+    
+def Augment_data(X_c, targets, params, degree ,size = 1):
+    data_aug = np.full((size, X_c.shape[1]), np.nan)
+    targets_aug = np.full((size), np.nan)
+    means = np.mean(params, axis = 0)
+    stds = np.std(params, axis = 0)
+    indices = np.random.choice(len(X_c), size=size, replace=True)
+    row_index = 0
+    for ind in indices:
+        y = X_c[ind,:][:,np.newaxis]
+        ran_b = np.random.normal(means[0],stds[0],(1))
+        gg = y * ran_b 
+        ran_a = np.random.normal(means[1],stds[1],(1))
+        gg = gg + ran_a
+        if degree > 0:
+            x = np.linspace(-1, 1, X_c.shape[1])
+            for j in range(1, degree+1):
+                vector = eval_legendre(j, x)[:,np.newaxis]
+                ran_d = np.random.normal(means[j+1],stds[j+1],(1))
+                gg = gg + (ran_d * vector)
+                
+        data_aug[row_index] = gg.ravel()
+        targets_aug[row_index] = targets[ind]
+        row_index += 1
+    return data_aug,targets_aug
 
 
-data, targets = AugmentDataByLinearCombinations(data_mean, targets_mean, 1000, 2)
+
+data_prep, params = EMSC(data_mean, 2)
+data, targets = Augment_data(data_prep, targets_mean, params, 2, 1000)
 
 rdlr = ReduceLROnPlateau(patience=30, factor=0.5, min_lr=1e-6, monitor='loss', verbose=0)
 es = EarlyStopping(monitor='loss', patience=60)
@@ -118,7 +153,7 @@ print('Train Scores:', train_scores)
 
 print('Train Scores:', test_scores)
 
-fig_name = "linear_augmented_fig_" + str(seed) + str(1) + ".pdf"
+fig_name = "emsc_augmented_fig_" + str(seed) + str(1) + ".pdf"
 
 #
 # Calculate training and test mean and std
@@ -143,7 +178,7 @@ plt.legend(loc='lower right')
 plt.show()
 plt.savefig(fig_name)
 
-fig_name = "linear_augmented_fig_" + str(seed) + str(2) + ".pdf"
+fig_name = "emsc_augmented_fig_" + str(seed) + str(2) + ".pdf"
 
 train_mean = -1 * np.mean(train_scores, axis=1)
 train_std = -1 * np.std(train_scores, axis=1)
