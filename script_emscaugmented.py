@@ -141,7 +141,7 @@ pipe = Pipeline([
             ('model', model)
         ])
 
-train_sizes, train_scores, test_scores, fit_times, _ = learning_curve(pipe, data, targets, cv = 5, fit_params={'callbacks': [rdlr,es]} ,return_times=True,
+train_sizes, train_scores, test_scores, fit_times, _ = learning_curve(pipe, data, targets, cv = 5, fit_params={'model__callbacks': [rdlr,es]} ,return_times=True,
                                                                       scoring = 'neg_root_mean_squared_error', train_sizes=np.linspace(0.1, 1.0, 10))
 
 print('Train Sizes:', train_sizes)
